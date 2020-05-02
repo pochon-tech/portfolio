@@ -26,4 +26,6 @@ services:
       dockerfile: Dockerfile-php
     logging: *default-logging
     volumes:
-    - ./backend:/var/backend
+    - ./backend:/var/www
+    ports:
+    - 80:80
