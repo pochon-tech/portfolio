@@ -1,0 +1,11 @@
+FROM php:7.3-apache
+
+RUN apt update && apt-get install -y git libzip-dev
+RUN docker-php-ext-install pdo_mysql zip
+
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+ENV COMPOSER_ALLOW_SUPERUSER 1
+
+RUN a2enmod rewrite
+
+WORKDIR /var/backend
