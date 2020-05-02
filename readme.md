@@ -90,3 +90,13 @@ $ php artisan ide-helper:generate
 ```
 
 </details>
+
+<details><summary>Top画面を作成する</summary>
+
+- Laravel側ではBladeテンプレートをメインに画面を製作する。
+- CSSはbootstrapを使用する。 https://getbootstrap.com/docs/4.1 
+- `welcome.blade.php`をトップ画面とする。
+
+
+
+</details>
