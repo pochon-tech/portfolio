@@ -204,7 +204,75 @@ $this->call([
 
 - Userモデルは標準のままだと、`app`ディレクトリ直下にUser.phpとして設置されるので、`app/Models`配下に移動させておく。
 - 移動させたら`User.php`の先頭のほうに定義している`namespace`も`namespace App\Models;`に忘れずに書き換えておく。
+- `User.php`をuseしている下記2点もも修正する。
+  - app/Http/Controllers/Auth/RegisterController.php
+  - config/auth.php
 
+**Admin.phpを実装する**
+
+- 自動生成した`Admin.php`は、下記のように単純なモデル (Eloquent継承クラス) になっていることに注意。
+```php:
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Admin extends Model
+{
+}
+```
+- `User.php`同様に、`Authenticatable`を継承させるように修正する。
+```php:
+<?php
+
+namespace App\Models;
+
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+
+class Admin extends Authenticatable
+{
+    use Notifiable;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
+    protected $fillable = [
+        'name', 'email', 'password',
+    ];
+
+    /**
+     * The attributes that should be hidden for arrays.
+     *
+     * @var array
+     */
+    protected $hidden = [
+        'password', 'remember_token',
+    ];
+
+    /**
+     * The attributes that should be cast to native types.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+    ];
+}
+```
+
+**Guardの追加** 
+
+- `config/auth.php`にAdminの認証方式を追加する。
+- 変更点は下記。
+  - デフォルトの認証 (`defaults`) を修正する。標準のままだと「web」になっているので、分かりづらいので「user」に返る。
+  - `guards`を変更・追加する。「web」を「user」というGuard名に変更。「admin」を追加 (userとほぼ同じ、providerだけ`admins`にする)。
+  - `providers`に追加。「users」と同じような構成で「admins」を追加。「model」は「`App\Models\Admin::class`」を指定する。
+  - `passwords`に追加。「users」と同じような構成で「admins」を追加。「provider」だけ「`admins`」にする。
 
 </details>
 
