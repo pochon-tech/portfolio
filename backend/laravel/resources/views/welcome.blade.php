@@ -35,10 +35,15 @@
     <!-- navigatin bar -->
     <div class="card">
         <div class="card-body">
-            <p> CRUD TODO APP </p>
+            <p>マルチログイン認証システム</p>
+            <p><span>→&nbsp;</span><a href="./user/login">ユーザ用ログイン画面 (user@example.com/user) </a> </p>
+            <p><span>→&nbsp;</span><a href="./admin/login">管理者用ログイン画面 (admin@example.com/admin)</a> </p>
         </div>
         <div class="card-body">
-            <p> MAP APP</p>
+            <p> CRUD TODO APP (製作中) </p>
+        </div>
+        <div class="card-body">
+            <p> MAP APP (製作中)</p>
         </div>
     </div>
     </body>

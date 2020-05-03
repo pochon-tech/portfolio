@@ -451,8 +451,54 @@ class RedirectIfAuthenticated
 - 標準の`app/Http/Controllers/Auth/LoginController.php`を参考に、下記2種類のLoginControllerを作成する。
   - `app/Http/Controllers/User/Auth/LoginController.php`
   - `app/Http/Controllers/Admin/Auth/LoginController.php`
+- 標準の`app/Http/Controllers/Auth/RegisterController.php`を参考に、下記2種類のLoginControllerを作成する。
+  - `app/Http/Controllers/User/Auth/RegisterController.php`
+  - `app/Http/Controllers/Admin/Auth/RegisterController.php`
 
+**View側を作成する**
 
+- `resources/views/layouts/user/app.blade.php`にユーザ画面用のレイアウトを実装する。
+- `resources/views/layouts/admin/app.blade.php`に管理画面用のレイアウトを実装する。
+
+- レイアウトを実装したら、ログイン画面を作成する。
+- ユーザ用のログイン画面は、`resources/views/user/auth/login.blade.php`とする。
+- 管理者用のログイン画面は、`resources/views/admin/auth/login.blade.php`とする。
+- ユーザ用の新規登録画面は、`resources/views/user/auth/register.blade.php`とする。
+- 管理者用の新規登録画面は、`resources/views/admin/auth/register.blade.php`とする。
+- ユーザ用のログイン後の画面は、`resources/views/user/home.blade.php`とする。
+- 管理者用のログイン後の画面は、`resources/views/admin/home.blade.php`とする。
+
+- CSSがあたってないと見栄えが悪いので、`laravel/ui`のものを採用する。
+```sh:
+# laravel/uiのインストール Laravel7.xがリリースされて以降、バージョンを付与しないとエラーになっている。
+# Laravel 6.xの場合は、 laravel/ui 1.* Laravel7.xの場合は、 laravel/ui
+$ composer require laravel/ui 1.* --dev
+# ログイン画面の作成
+$ php artisan ui vue --auth
+# 上記を実行すると以下のようなファイルが追加・変更が行われる。 
+#   backend/laravel/webpack.mix.jsの変更。内容的には変わってない。
+#   backend/laravel/resources/js/app.jsの変更。 Vueの読み込みとか
+#   backend/laravel/resources/js/bootstrap.jsの変更。 popper.jsの読み込みやjqueryの登録とか。
+#   backend/laravel/resources/sass/app.scssの変更。variablesの読み込み、Font読み込みなどなど。
+#   backend/laravel/routes/web.phpの変更。認証(Auth::routes();)やHomeへのルーティングが追加されている。
+#   backend/laravel/app/Http/Controllers/HomeController.phpの新規追加。
+#   backend/laravel/resources/js/components/の新規追加
+#   backend/laravel/resources/sass/_variables.scss
+#   backend/laravel/resources/views/auth/の新規追加
+#   backend/laravel/resources/views/home.blade.phpの新規追加
+#   backend/laravel/resources/views/layouts/app.blade.phpの新規追加
+# ログイン用テーブルの作成 (序盤で行ったのでやらないでよい。)
+# $ php artisan migrate
+# Node.jsのインストール
+$ curl -sL https://deb.nodesource.com/setup_10.x | bash -
+$ apt-get install -y nodejs
+# 必要なPackageをインストール
+$ npm install
+# CSS/JSを作成ビルド
+$ npm run dev
+```
+- 上記を実行することで、public配下にコンパイルされたJSとCSSがコンパイルされる。
+- おそらく画面レイアウトが綺麗になっているかと思うので、事前に用意したダミーデータでログインを試す。
 </details>
 
 
