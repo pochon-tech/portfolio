@@ -346,6 +346,76 @@ Route::namespace('Admin')->prefix('admin')->name('admin.')->group(function () {
 - `prefix`: ルートプレフィックス。グループ内の各ルートに対して、指定されたURIのプレフィックスを指定する。`admin/register`等。
 - `only`: 必要なリソースを限定する。上記の場合、`HomeController`はindexしかいらない。
 
+**$redirectToの設定**
+
+- $redirectToのプロパティは`RouteServiceProvider`の定数で管理する。
+- 従来、認証関連のリダイレクトは、認証関連のコントローラーの`RedirectTo`プロパティで管理していたが、Ver6.8からRouteServiceProviderの定数HOMEに集約された。
+- 具体的には、`app/Providers/RouteServiceProvider.php`で以下のように、それぞれのリダイレクト先を設定する。
+```php:
+    // Userのリダイレクト先
+    public const HOME = '/user/home';
+    // Adminのリダイレクト先
+    public const ADMIN_HOME = '/admin/home'; 
+```
+- 未ログイン時の挙動を設定する必要があるので、`app/Http/Middleware/Authenticate.php`に、未ログイン時にログイン認証が必要なページにアクセスした時のリダイレクト先を指定する。
+```php:
+namespace App\Http\Middleware;
+
+use Illuminate\Support\Facades\Route;
+use Illuminate\Auth\Middleware\Authenticate as Middleware;
+
+class Authenticate extends Middleware
+{
+    protected $user_route  = 'user.login';
+    protected $admin_route = 'admin.login';
+
+    protected function redirectTo($request)
+    {
+        // ルーティングに応じて未ログイン時のリダイレクト先を振り分ける
+        if (!$request->expectsJson()) {
+            if (Route::is('user.*')) {
+                return route($this->user_route);
+            } elseif (Route::is('admin.*')) {
+                return route($this->admin_route);
+            }
+        }
+    }
+}
+```
+- また、にログインしてる時に`/login`にアクセスしてきた時のリダイレクト先を`app/Http/Middleware/RedirectIfAuthenticated.php`で指定する。
+```php:
+<?php
+
+namespace App\Http\Middleware;
+
+use App\Providers\RouteServiceProvider;
+use Closure;
+use Illuminate\Support\Facades\Auth;
+
+class RedirectIfAuthenticated
+{
+    /**
+     * Handle an incoming request.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure  $next
+     * @param  string|null  $guard
+     * @return mixed
+     */
+    public function handle($request, Closure $next, $guard = null)
+    {
+        if (Auth::guard($guard)->check() && $guard === 'user') {
+            return redirect(RouteServiceProvider::HOME);
+        } elseif (Auth::guard($guard)->check() && $guard === 'admin') {
+            return redirect(RouteServiceProvider::ADMIN_HOME);
+        }
+
+        return $next($request);
+    }
+}
+```
+
+
 
 </details>
 
