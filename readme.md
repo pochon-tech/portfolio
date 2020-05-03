@@ -101,20 +101,51 @@ $ php artisan ide-helper:generate
 
 <details><summary>マルチAuth認証を作成する</summary>
 
-- User,Adminの二種類でAuth認証を試みる。
+- User,Adminの二種類でAuth認証を実装する。
+
+**Modelのディレクトリ構成**
+```
+models
+  ├── user
+  ├── admin
+```
+
+**Controllerのディレクトリ構成**
 ```
 controllers
-　　　├── Admin
-　　　│   ├── Auth
-　　　│   │   ├── LoginController.php
-　　　│   │   ├── RegisterController.php
-　　　│   └── HomeController.php
-　　　├── User
-　　　│   ├── Auth
-　　　│   │   ├── LoginController.php
-　　　│   │   ├── RegisterController.php
-　　　│   └── HomeController.php
-　　　└── Controller.php
+　├── Admin
+　│   ├── Auth
+　│   │   ├── LoginController.php
+　│   │   ├── RegisterController.php
+　│   └── HomeController.php
+　├── User
+　│   ├── Auth
+　│   │   ├── LoginController.php
+　│   │   ├── RegisterController.php
+　│   └── HomeController.php
+　└── Controller.php
+```
+**Viewsのディレクトリ構成**
+```
+views
+  ├── user
+  │   ├── auth
+  │   │   ├── login.blade.php
+  │   │   └── register.blade.php
+  │   └── home.blade.php
+  │
+  ├── admin
+  │   ├── auth
+  │   │   ├── login.blade.php
+  │   │   └── register.blade.php
+  │   └── home.blade.php
+  │
+  └── layouts
+      ├── user
+      │    └── app.blade.php
+      │
+      └── admin
+          └── app.blade.php
 ```
 
 **モデルを作成する**
@@ -415,6 +446,11 @@ class RedirectIfAuthenticated
 }
 ```
 
+**User,AdminのLoginコントローラおよび新規登録コントローラを作成する**
+
+- 標準の`app/Http/Controllers/Auth/LoginController.php`を参考に、下記2種類のLoginControllerを作成する。
+  - `app/Http/Controllers/User/Auth/LoginController.php`
+  - `app/Http/Controllers/Admin/Auth/LoginController.php`
 
 
 </details>
