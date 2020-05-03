@@ -125,6 +125,7 @@ controllers
 ```
 $ php artisan make:model Models/Admin -m
 ```
+
 - 上記で作成されるマイグレーションファイルを、標準の`create_users_table.php`と同じようなデータ構成で修正する
 ```php:
 <?php
@@ -165,6 +166,10 @@ class CreateAdminsTable extends Migration
 }
 ```
 - `create_admins_table`を上記のように修正できたら、`php artisan migrate`を実行し、Adminsテーブルを作成する。
+- ※マイグレーションファイルの命名ルールは以下の通りである。
+  - `YYYY_MM_DD_HHIISS`: 日付の小さいものから実行される
+  - `[create/update]_[テーブル名]_table`: そのままクラス名に利用される。
+  - 名称は、実はなんでも良いがマイグレーションの実行内容がわかる名前をつけたほうが良い。
 
 **ダミーデータを用意するためにSeederを作成する**
 
@@ -273,6 +278,74 @@ class Admin extends Authenticatable
   - `guards`を変更・追加する。「web」を「user」というGuard名に変更。「admin」を追加 (userとほぼ同じ、providerだけ`admins`にする)。
   - `providers`に追加。「users」と同じような構成で「admins」を追加。「model」は「`App\Models\Admin::class`」を指定する。
   - `passwords`に追加。「users」と同じような構成で「admins」を追加。「provider」だけ「`admins`」にする。
+
+**HomeControllerの作成**
+
+- Controllers配下にAdminとUserディレクトリを作成
+- それぞれのディレクトリに`HomeController`を作成する。`HomeController`は、ログイン後に表示する画面出力用。
+```sh:
+php artisan make:controller Admin/HomeController --resource
+php artisan make:controller User/HomeController --resource
+```
+- 作成したら、`__construct`メソッドと`index`メソッドの実装を行う。
+```php:
+    public function __construct()
+    {
+        // User/HomeControllerの場合
+        $this->middleware('auth:user');
+        // Admin/HomeControllerの場合
+        $this->middleware('auth:admin');
+    }
+
+    public function index()
+    {
+        return view('user.home');
+    }
+```
+
+**ルーティング設定を行う**
+
+- `routes/web.php`に、作成したControllerとのパスを紐づとAuth認証をそれぞれ指定
+```php:
+// User
+Route::namespace('User')->prefix('user')->name('user.')->group(function () {
+
+    // ログイン認証関連
+    Auth::routes([
+        'register' => true,
+        'reset'    => false,
+        'verify'   => false
+    ]);
+
+    // ログイン認証後
+    Route::middleware('auth:user')->group(function () {
+        // TOPページ
+        Route::resource('home', 'HomeController', ['only' => 'index']);
+    });
+});
+// Admin 
+Route::namespace('Admin')->prefix('admin')->name('admin.')->group(function () {
+
+    // ログイン認証関連
+    Auth::routes([
+        'register' => true,
+        'reset'    => false,
+        'verify'   => false
+    ]);
+
+    // ログイン認証後
+    Route::middleware('auth:admin')->group(function () {
+        // TOPページ
+        Route::resource('home', 'HomeController', ['only' => 'index']);
+    });
+});
+```
+
+- `Route::namespace`: 名前空間下のコントローラを表す。`App\Http\Controllers\Admin`等。同じコントローラー名でも見やすかったり、ディレクトリに分けてルートが書ける
+- `name`: 名前付きルート。特定のルートへのURLを生成する。
+- `prefix`: ルートプレフィックス。グループ内の各ルートに対して、指定されたURIのプレフィックスを指定する。`admin/register`等。
+- `only`: 必要なリソースを限定する。上記の場合、`HomeController`はindexしかいらない。
+
 
 </details>
 
