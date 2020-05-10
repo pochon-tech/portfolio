@@ -501,4 +501,39 @@ $ npm run dev
 - おそらく画面レイアウトが綺麗になっているかと思うので、事前に用意したダミーデータでログインを試す。
 </details>
 
+<details><summary>プロジェクトをローカルに展開する(Windows 10 の場合)</summary>
 
+```sh:
+# プロジェクトをクローンする。
+git clone https://github.com/pochon-tech/portfolio.git .
+# ローカル環境にコンテナを立ち上げる。
+docker-compose up -d
+# Laravelのコンテナに接続する。
+docker-compose exec backend bash
+# vendorディレクトリが無いので、下記のコマンドを実行して作成する。※注意
+# cd laravel; composer update
+# composer.lockがある場合は下記の方がよい。
+# 下記のコマンドだと、composer.jsonではなく、composer.lockファイルを見にいくため、ライブラリ群のバージョンを他のメンバーと統一することができる。
+cd laravel
+composer install
+# ENVファイルを作成する。MYSQLの接続情報等を書き換える。
+cp .env.example .env
+vi .env
+# アプリケーションキーの初期化をおこなう。これを行うと、ユーザーのセッション情報、パスワードの暗号化をよりセキュアにできる。
+php artisan key:generate
+# マイグレーションを行う
+php artisan migrate
+# テストデータを準備する。(Seederがある場合)
+php artisan db:seed
+# もし、[ReflectionException]とかClass ‘HogeHoge’ not foundのようなエラーが出たら、次のコマンドでオートロードの定義を更新
+# composer dump-autoload
+# 下記のコマンドで、「再マイグレーション＆seed実行」が可能。マイグレーションファイル再定義したときとかに覚えておくと便利。
+# php artisan migrate:refresh --seed
+# Storageディレクトリを書き込めるようにしておく。
+chmod -R 777 storage
+# publicディレクトリの参照を設定する。
+rm -rf /var/www/html/
+ln -s /var/www/laravel/public/ /var/www/html
+```
+
+</details>

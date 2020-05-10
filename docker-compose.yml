@@ -27,5 +27,6 @@ services:
     logging: *default-logging
     volumes:
     - ./backend:/var/www
+    - ./log/apache2:/var/log/apache2/
     ports:
     - 80:80
