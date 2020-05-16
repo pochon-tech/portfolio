@@ -912,11 +912,17 @@ $ touch backend/laravel/resources/views/contacts/edit.blade.php
 
 ```sh:
 # 今までの作業内容をコミットPUSH
-$ git add -A; git coomit -m"proceeded"; git push origin;
+$ git add -A; git commit -m"proceeded"; git push origin;
+# ローカルのタグを消す
+$ git tag -d v1.0
+# リモートのタグ消す場合
+$ git push origin :v1.0
 # タグを付ける
 $ git tag -a v1.0 -m 'Base CRUD Application & Multi Auth'
-# タグ反映
-$ git push origin --tags
+# リモートにタグ反映
+$ git push origin v1.0
+# リモートにタグ全て反映
+#$ git push origin --tags
 # タグベースでClone 
 $ git clone リポジトリ名 -b ブランチorタグ名
 ```
