@@ -537,3 +537,64 @@ ln -s /var/www/laravel/public/ /var/www/html
 ```
 
 </details>
+
+<details><summary>問い合わせページの作成</summary>
+
+- 前述の手順でローカル環境にプロジェクトをClone。(既存であるなら問題ない)
+- 基本的なCRUDを実装する。
+
+**モデルの作成**
+
+```sh:
+$ docker-compose run backend bash -c "cd laravel; php artisan make:model Contact --migration"
+```
+- 上記のコマンドを実行することで、Contactモデルとマイグレーションファイルが自動生成される。
+- 作成されたマイグレーションファイルを開き、upメソッドを更新する。
+
+```php:backend\laravel\database\migrations\2020_05_16_034540_create_contacts_table.php
+Schema::create('contacts', function (Blueprint $table) {
+    $table->increments('id');
+    $table->timestamps();
+    $table->string('first_name');
+    $table->string('last_name');
+    $table->string('email');
+    $table->string('job_title');
+    $table->string('city');   
+    $table->string('country');
+});
+```
+- Schemaファサードのcreateメソッドを使用してテーブルを作成することができる。
+- createメソッドは引数を2つ受け取る。最初は「テーブル名」で、2つ目は新しいテーブルを定義するために使用する「Blueprint」オブジェクトを受け取るクロージャ。
+- 上記の変更が終わったら、下記コマンドで、テーブルの作成を実行する。
+
+```sh:
+$ docker-compose run backend bash -c "cd laravel; php artisan migrate"
+# Mysqlに接続
+$ docker-compose exec mysql bash -c "mysql -uuser -ppassword -Dlaravel"
+# どのようなテーブルが作られたか確認
+> SHOW CREATE TABLE `contacts`\G;
+```
+- 続いて、モデルを編集する。
+- 生成されたContact.phpをmodelsディレクトリに移動し、下記の変更を行う。
+
+```php:
+namespace App\Models; // modelsディレクトリに移動させたので
+class Contact extends Model
+{
+    // ホワイトリスト： $fillableに指定したカラムのみ、create()やfill()、update()で値が代入される。
+    // $contact->update($request->all()); <- $fillableに指定していないもの以外は入らない。
+    protected $fillable = [
+        'first_name', 'last_name', 'email', 'city', 'country', 'job_title'
+    ];
+    // ブラックリスト：$guardedに指定したカラムのみ、create()やfill()、update()で値が代入されない。
+    // $contact->update($request->all()); <- $guardedに指定していないものは全て入り得る
+    // protected $guarded = [];
+}
+```
+- $fillableと$guardedは、**Model・DB単位で予期せぬ代入が起こると困るもの**を書く。どちらか一方で構わない。
+- $fillableを採用する
+  - $fillable を採用する理由として、**Eloquentからの派生Classの$fillableの記述を見るだけで、そのClassが持ちうるプロパティが一目でわかりやすい**。※ただし、Relationは確認できない。
+  - $guarded を採用する場合、DBを眺めてClassのプロパティについて調べるコストが発生する。
+  - 2〜10個のフィールドがある場合は、fillableを使用するのが適切。それ以上は多くて見づらい。
+
+</details>
