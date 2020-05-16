@@ -926,4 +926,98 @@ $ git push origin v1.0
 # タグベースでClone 
 $ git clone リポジトリ名 -b ブランチorタグ名
 ```
+
+**画像アップロード機能追加**
+
+- お問い合わせ画面に画像のアップロード機能を追加する。
+- アップロード画像のfilename格納するカラムを追加する必要があるので、マイグレーションファイルを新たに作成する。
+- マイグレーションのファイル名は以下を参考に決めた。
+  - カラム名はファイル名に含めない。複数カラムの場合や開発途中で名称変更となった場合手間。
+  - 日付でユニーク化。
+  - _tableは省略。テーブル操作なので。
+
+```sh:
+$ docker-compose run backend bash -c "cd laravel; php artisan make:migration modifycontacts_20200516 --table=contacts"
+```
+- 作成したら、下記のようにカラム追加・削除の定義を行う。
+
+```php:
+    public function up()
+    {
+        Schema::table('contacts', function (Blueprint $table) {
+            $table->string('file_name');
+        });
+    }
+    public function down()
+    {
+        Schema::table('contacts', function (Blueprint $table) {
+            $table->dropColumn('file_name');
+        });
+    }
+```
+- 追記したら、マイグレーションを実行する。
+
+```sh:
+$ docker-compose run backend bash -c "cd laravel; php artisan migrate"
+```
+- 続いて、テンプレートにfile選択を追加する。Formのenctypeも変更。
+
+```php:
+      <form method="post" action="{{ route('contacts.store') }}" enctype="multipart/form-data">
+          @csrf
+          <div class="form-group">
+              <label for="file">file:</label>
+              <input type="file" class="form-control" name="file">
+          </div>
+```
+- 続いて、コントローラの`store()メソッド`に処理を追加する。
+
+```php:
+
+    public function store(Request $request)
+    {
+        // 入力項目のValidate
+        $request->validate([
+            'file' => 'required|file|image|mimes:jpeg,png,jpg,gif|max:2048',
+```
+- Validateで指定した夫々の機能について
+  - file: フィールドがアップロードに成功したファイルであることをバリデートする。
+  - image: フィールドで指定されたファイルが画像(jpg、png、bmp、gif、svg)であることをバリデートする。
+  - mimes:foo,bar,…: フィールドで指定されたファイルが拡張子のリストの中のMIMEタイプのどれかと一致することをバリデートする。
+  - max: フィールドが最大値として指定された値以下であることをバリデートする。sizeルールと同様の判定方法で、文字列、数値、配列、ファイルが評価される。
+- 続いて、`store()メソッド`に画像を保存する処理を追加する。
+- 今回はローカルの`storage/images`ディレクトリ配下に画像は保存する。
+```php:
+    public function store(Request $request)
+    {
+        $filename = $request->file->store('public/images');
+        // モデルインスタンスに値を格納
+        $contact = new Contact([
+            'file_name' => basename($filename),
+```
+- また、使用しているContactモデルには、ホワイトリストに「file_name」を事前に追加しておく。
+- 続いて、画像の表示を実装する。
+- Storage配下に画像を保存しているので、シンボリックリンクを張る必要がある。
+
+```php:
+$ docker-compose run backend bash -c "cd laravel; php artisan storage:link"
+```
+- 上記を実行することで、public/storage から storage/public にシンボリックリンクが作成される。
+- 一覧画面に画像を表示するようにテンプレートを修正する。
+
+```php:
+    <td><img src="{{asset('storage/images/'.$contact->file_name)}}" width="100px" height="100px"></td>
+```
+- 続いて、更新の画面も修正しておく。
+
+```php:
+        <form method="post" action="{{ route('contacts.update', $contact->id) }}" enctype="multipart/form-data">
+            @method('PATCH') 
+            @csrf
+            <div class="form-group">
+                <label for="first_name">Image:</label>
+                <input type="file" class="form-control" name="file">
+            </div>
+```
+
 </details>

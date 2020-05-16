@@ -15,11 +15,15 @@
         </div>
         <br /> 
         @endif
-        <form method="post" action="{{ route('contacts.update', $contact->id) }}">
+        <form method="post" action="{{ route('contacts.update', $contact->id) }}" enctype="multipart/form-data">
             @method('PATCH') 
             @csrf
             <div class="form-group">
+                <label for="first_name">Image:</label>
+                <input type="file" class="form-control" name="file">
+            </div>
 
+            <div class="form-group">
                 <label for="first_name">First Name:</label>
                 <input type="text" class="form-control" name="first_name" value={{ $contact->first_name }} />
             </div>

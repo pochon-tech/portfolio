@@ -15,6 +15,7 @@
     <thead>
         <tr>
           <td>ID</td>
+          <td>Image</td>
           <td>Name</td>
           <td>Email</td>
           <td>Job Title</td>
@@ -27,6 +28,7 @@
         @foreach($contacts as $contact)
         <tr>
             <td>{{$contact->id}}</td>
+            <td><img src="{{asset('storage/images/'.$contact->file_name)}}" width="100px" height="100px"></td>
             <td>{{$contact->first_name}} {{$contact->last_name}}</td>
             <td>{{$contact->email}}</td>
             <td>{{$contact->job_title}}</td>

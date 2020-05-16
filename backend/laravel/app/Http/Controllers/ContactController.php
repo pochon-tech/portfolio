@@ -39,12 +39,16 @@ class ContactController extends Controller
     {
         // 入力項目のValidate
         $request->validate([
+            'file' => 'required|file|image|mimes:jpeg,png,jpg,gif|max:2048',
             'first_name'=>'required',
             'last_name'=>'required',
             'email'=>'required'
         ]);
+
+        $filename = $request->file->store('public/images');
         // モデルインスタンスに値を格納
         $contact = new Contact([
+            'file_name' => basename($filename),
             'first_name' => $request->get('first_name'),
             'last_name' => $request->get('last_name'),
             'email' => $request->get('email'),

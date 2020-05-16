@@ -14,8 +14,12 @@
         </ul>
       </div><br />
     @endif
-      <form method="post" action="{{ route('contacts.store') }}">
+      <form method="post" action="{{ route('contacts.store') }}" enctype="multipart/form-data">
           @csrf
+          <div class="form-group">
+              <label for="file">file:</label>
+              <input type="file" class="form-control" name="file">
+          </div>
           <div class="form-group">    
               <label for="first_name">First Name:</label>
               <input type="text" class="form-control" name="first_name"/>
@@ -41,7 +45,7 @@
           <div class="form-group">
               <label for="job_title">Job Title:</label>
               <input type="text" class="form-control" name="job_title"/>
-          </div>                         
+          </div>
           <button type="submit" class="btn btn-primary">Add contact</button>
       </form>
   </div>
