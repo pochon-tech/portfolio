@@ -911,9 +911,11 @@ $ touch backend/laravel/resources/views/contacts/edit.blade.php
 - 良いタイミングなので、Git Tag付けしておく。
 
 ```sh:
+# 今までの作業内容をコミットPUSH
+$ git add -A; git coomit -m"proceeded"; git push origin;
 # タグを付ける
 $ git tag -a v1.0 -m 'Base CRUD Application & Multi Auth'
-# タグと一緒に反映
+# タグ反映
 $ git push origin --tags
 # タグベースでClone 
 $ git clone リポジトリ名 -b ブランチorタグ名
