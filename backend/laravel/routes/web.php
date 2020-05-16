@@ -16,6 +16,9 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// Contact系
+Route::resource('contacts', 'ContactController');
+
 // User
 Route::namespace('User')->prefix('user')->name('user.')->group(function () {
 

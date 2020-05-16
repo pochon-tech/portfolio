@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace App\Models; // modelsディレクトリに移動させたので
 
 use Illuminate\Database\Eloquent\Model;
 

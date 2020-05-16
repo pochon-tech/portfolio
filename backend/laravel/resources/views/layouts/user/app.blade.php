@@ -67,6 +67,9 @@
                                 </div>
                             </li>
                         @endunless
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('contacts.create') }}">{{ __('Contact') }}</a>
+                        </li>
                     </ul>
                 </div>
             </div>

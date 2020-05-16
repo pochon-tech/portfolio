@@ -597,4 +597,315 @@ class Contact extends Model
   - $guarded を採用する場合、DBを眺めてClassのプロパティについて調べるコストが発生する。
   - 2〜10個のフィールドがある場合は、fillableを使用するのが適切。それ以上は多くて見づらい。
 
+**コントローラおよびルーティングの作成**
+
+- モデルを作成した後は、下記のコマンドでコントローラを作成する。
+
+```sh:
+$ docker-compose run backend bash -c "cd laravel; php artisan make:controller ContactController --resource"
+```
+- 次に`routes/web.php`ファイルを開き、ルーティングを追加する。
+
+```php:
+// Contact系
+Route::resource('contacts', 'ContactController');
+```
+- 上記の一行で、各メソッドに紐づいたルーティングが定義される。
+- 紐づいたルーティングの確認は、下記のコマンドを実行することで確認することができる。
+
+```sh:
+$ docker-compose run backend bash -c "cd laravel; php artisan route:list"
++--------+-----------+-------------------------------+-----------------------+-------------------------------------------------------------------------+------------------------------------------------------+
+| Domain | Method    | URI                           | Name                  | Action                                                                  | Middleware                                           |
++--------+-----------+-------------------------------+-----------------------+-------------------------------------------------------------------------+------------------------------------------------------+
+|        | GET|HEAD  | contacts                      | contacts.index        | App\Http\Controllers\ContactController@index                            | web                                                  |
+|        | POST      | contacts                      | contacts.store        | App\Http\Controllers\ContactController@store                            | web                                                  |
+|        | GET|HEAD  | contacts/create               | contacts.create       | App\Http\Controllers\ContactController@create                           | web                                                  |
+|        | GET|HEAD  | contacts/{contact}            | contacts.show         | App\Http\Controllers\ContactController@show                             | web                                                  |
+|        | PUT|PATCH | contacts/{contact}            | contacts.update       | App\Http\Controllers\ContactController@update                           | web                                                  |
+|        | DELETE    | contacts/{contact}            | contacts.destroy      | App\Http\Controllers\ContactController@destroy                          | web                                                  |
+|        | GET|HEAD  | contacts/{contact}/edit       | contacts.edit         | App\Http\Controllers\ContactController@edit                             | web   
+```
+- ちなみに、RESTful APIのみを公開するコントローラーを作成する場合は、`Route::apiResource('contacts', 'ContactController');`のように、ルーティングに定義することで、HTMLテンプレートの提供に使用されるルートを除外できる。
+
+**CRUD操作の実装**
+
+- まずは、作成されたContactコントローラ内でContactモデルを使用するために、`use`する。
+
+```php:
+use App\Models\Contact;
+```
+- 続いて、`store()メソッド`内で登録処理を実装する。
+
+```php:
+    public function store(Request $request)
+    {
+        // 入力項目のValidate
+        $request->validate([
+            'first_name'=>'required',
+            'last_name'=>'required',
+            'email'=>'required'
+        ]);
+        // モデルインスタンスに値を格納
+        $contact = new Contact([
+            'first_name' => $request->get('first_name'),
+            'last_name' => $request->get('last_name'),
+            'email' => $request->get('email'),
+            'job_title' => $request->get('job_title'),
+            'city' => $request->get('city'),
+            'country' => $request->get('country')
+        ]);
+        // DBへ登録
+        $contact->save();
+        return redirect('/contacts')->with('success', 'Contact saved!');
+    }
+```
+- 続いて、`create()メソッド`に描画するテンプレートを追加する。
+
+```php:
+    public function create()
+    {
+        return view('contacts.create');
+    }
+```
+- ここで、`create()メソッド`では、使用可能なテンプレート`create.blade.php`が`resources/views/contacts`フォルダ内に存在する必要がある。
+- なので、`contacts/create.blade.php`を作成する。
+
+```sh:
+$ mkdir backend/laravel/resources/views/contacts
+$ touch backend/laravel/resources/views/contacts/create.blade.php
+```
+- 今回、User側のレイアウトを想定して、テンプレートを実装する。
+
+```php:
+@extends('layouts.user.app')
+
+@section('content')
+<div class="row">
+ <div class="col-sm-8 offset-sm-2">
+    <h1 class="display-6">お問い合わせ</h1>
+  <div>
+    @if ($errors->any())
+      <div class="alert alert-danger">
+        <ul>
+            @foreach ($errors->all() as $error)
+              <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+      </div><br />
+    @endif
+      <form method="post" action="{{ route('contacts.store') }}">
+          @csrf
+          <div class="form-group">    
+              <label for="first_name">First Name:</label>
+              <input type="text" class="form-control" name="first_name"/>
+          </div>
+
+          <div class="form-group">
+              <label for="last_name">Last Name:</label>
+              <input type="text" class="form-control" name="last_name"/>
+          </div>
+
+          <div class="form-group">
+              <label for="email">Email:</label>
+              <input type="text" class="form-control" name="email"/>
+          </div>
+          <div class="form-group">
+              <label for="city">City:</label>
+              <input type="text" class="form-control" name="city"/>
+          </div>
+          <div class="form-group">
+              <label for="country">Country:</label>
+              <input type="text" class="form-control" name="country"/>
+          </div>
+          <div class="form-group">
+              <label for="job_title">Job Title:</label>
+              <input type="text" class="form-control" name="job_title"/>
+          </div>                         
+          <button type="submit" class="btn btn-primary">Add contact</button>
+      </form>
+  </div>
+</div>
+</div>
+@endsection
+```
+- 続いて、`index()メソッド`内で一覧取得処理を実装する。
+
+```php:
+    public function index()
+    {
+        $contacts = Contact::all();
+        return view('contacts.index', compact('contacts'));
+    }
+```
+- 登録の時と同じように、対応するテンプレートを作成する。
+
+```sh:
+$ touch backend/laravel/resources/views/contacts/index.blade.php
+```
+- 一覧の中身を実装する。
+
+```php:
+@extends('layouts.user.app')
+
+@section('content')
+<div class="row">
+<div class="col-sm-12">
+    <h1 class="display-6">お問い合わせ</h1>  
+  <table class="table table-striped">
+    <thead>
+        <tr>
+          <td>ID</td>
+          <td>Name</td>
+          <td>Email</td>
+          <td>Job Title</td>
+          <td>City</td>
+          <td>Country</td>
+          <td colspan = 2>Actions</td>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach($contacts as $contact)
+        <tr>
+            <td>{{$contact->id}}</td>
+            <td>{{$contact->first_name}} {{$contact->last_name}}</td>
+            <td>{{$contact->email}}</td>
+            <td>{{$contact->job_title}}</td>
+            <td>{{$contact->city}}</td>
+            <td>{{$contact->country}}</td>
+            <td>
+                <a href="{{ route('contacts.edit',$contact->id) }}" class="btn btn-primary">Edit</a>
+            </td>
+            <td>
+                <form action="{{ route('contacts.destroy', $contact->id) }}" method="post">
+                  @csrf
+                  @method('DELETE')
+                  <button class="btn btn-danger" type="submit">Delete</button>
+                </form>
+            </td>
+        </tr>
+        @endforeach
+    </tbody>
+  </table>
+<div>
+</div>
+@endsection
+```
+- 続いて、`edit()メソッド`に更新対象の情報を取得して更新画面描画処理を実装する。
+
+```php:
+    public function edit($id)
+    {
+        $contact = Contact::find($id);
+        return view('contacts.edit', compact('contact'));        
+    }
+```
+- 続いて、`update()メソッド`に実際の更新処理を実装する。
+
+```php:
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'first_name'=>'required',
+            'last_name'=>'required',
+            'email'=>'required'
+        ]);
+
+        $contact = Contact::find($id);
+        $contact->first_name =  $request->get('first_name');
+        $contact->last_name = $request->get('last_name');
+        $contact->email = $request->get('email');
+        $contact->job_title = $request->get('job_title');
+        $contact->city = $request->get('city');
+        $contact->country = $request->get('country');
+        $contact->save();
+
+        return redirect('/contacts')->with('success', 'Contact updated!');
+    }
+```
+- 登録の時と同じように、対応するテンプレートを作成する。
+
+```sh:
+$ touch backend/laravel/resources/views/contacts/edit.blade.php
+```
+- 更新用画面を実装する。
+
+```php:
+@extends('layouts.user.app')
+
+@section('content')
+<div class="row">
+    <div class="col-sm-8 offset-sm-2">
+        <h1 class="display-3">Update a contact</h1>
+
+        @if ($errors->any())
+        <div class="alert alert-danger">
+            <ul>
+                @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+        <br /> 
+        @endif
+        <form method="post" action="{{ route('contacts.update', $contact->id) }}">
+            @method('PATCH') 
+            @csrf
+            <div class="form-group">
+
+                <label for="first_name">First Name:</label>
+                <input type="text" class="form-control" name="first_name" value={{ $contact->first_name }} />
+            </div>
+
+            <div class="form-group">
+                <label for="last_name">Last Name:</label>
+                <input type="text" class="form-control" name="last_name" value={{ $contact->last_name }} />
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="text" class="form-control" name="email" value={{ $contact->email }} />
+            </div>
+            <div class="form-group">
+                <label for="city">City:</label>
+                <input type="text" class="form-control" name="city" value={{ $contact->city }} />
+            </div>
+            <div class="form-group">
+                <label for="country">Country:</label>
+                <input type="text" class="form-control" name="country" value={{ $contact->country }} />
+            </div>
+            <div class="form-group">
+                <label for="job_title">Job Title:</label>
+                <input type="text" class="form-control" name="job_title" value={{ $contact->job_title }} />
+            </div>
+            <button type="submit" class="btn btn-primary">Update</button>
+        </form>
+    </div>
+</div>
+@endsection
+```
+- 続いて、`destroy()`メソッドに削除処理を実装する。
+
+```php:
+    public function destroy($id)
+    {
+        $contact = Contact::find($id);
+        $contact->delete();
+
+        return redirect('/contacts')->with('success', 'Contact deleted!');
+    }
+```
+- 今まで、登録・更新・削除処理を実装する中で、noticeを一覧画面へ返すような処理を実装していたので、一覧画面(index.blade.php)でnoticeが表示されうように修正する。
+
+```php:
+@section('content')
+<div class="col-sm-12">
+  @if(session()->get('success'))
+    <div class="alert alert-success">
+      {{ session()->get('success') }}  
+    </div>
+  @endif
+</div>
+```
+- 以上で、BaseなCRUD操作の実装が完了。
 </details>
