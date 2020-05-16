@@ -908,4 +908,14 @@ $ touch backend/laravel/resources/views/contacts/edit.blade.php
 </div>
 ```
 - 以上で、BaseなCRUD操作の実装が完了。
+- 良いタイミングなので、Git Tag付けしておく。
+
+```sh:
+# タグを付ける
+$ git tag -a v1.0 -m 'Base CRUD Application & Multi Auth'
+# タグと一緒に反映
+$ git push origin --tags
+# タグベースでClone 
+$ git clone リポジトリ名 -b ブランチorタグ名
+```
 </details>
