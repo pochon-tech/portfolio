@@ -22,6 +22,8 @@ class CreateContactsTable extends Migration
             $table->string('job_title');
             $table->string('city');   
             $table->string('country');
+            $table->unsignedInteger('pref_id'); // 追加
+            $table->foreign('pref_id')->references('id')->on('prefectures'); // 追加
         });
     }
 

@@ -39,6 +39,16 @@
               <input type="text" class="form-control" name="city"/>
           </div>
           <div class="form-group">
+              <label for="pref_id">Pref:</label>
+              <select name="pref_id" class="form-control">
+                @foreach($prefectures as $id => $name)
+                  <option value="{{ $id }}">{{ $name }} </option>
+                @endforeach
+              </select>
+          </div>
+          
+
+          <div class="form-group">
               <label for="country">Country:</label>
               <input type="text" class="form-control" name="country"/>
           </div>

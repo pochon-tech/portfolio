@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Contact;
+use App\Models\Prefecture;
 
 class ContactController extends Controller
 {
@@ -16,6 +17,8 @@ class ContactController extends Controller
     {
         //
         $contacts = Contact::all();
+        echo "<pre>";
+        var_dump($contacts); 
         return view('contacts.index', compact('contacts'));
     }
 
@@ -26,7 +29,9 @@ class ContactController extends Controller
      */
     public function create()
     {
-        return view('contacts.create');
+        $prefectures = Prefecture::orderBy('code','asc')->pluck('name', 'id');
+        $prefectures = $prefectures->prepend('都道府県', '');
+        return view('contacts.create')->with(['prefectures' => $prefectures]);
     }
 
     /**
@@ -54,7 +59,8 @@ class ContactController extends Controller
             'email' => $request->get('email'),
             'job_title' => $request->get('job_title'),
             'city' => $request->get('city'),
-            'country' => $request->get('country')
+            'country' => $request->get('country'),
+            'pref_id' => $request->get('pref_id')
         ]);
         // DBへ登録
         $contact->save();

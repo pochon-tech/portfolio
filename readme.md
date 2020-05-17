@@ -1020,4 +1020,348 @@ $ docker-compose run backend bash -c "cd laravel; php artisan storage:link"
             </div>
 ```
 
+**都道府県をDBマスタから取得してプルダウンと連携する**
+
+- やること；都道府県マスタをMysql上に格納しておき、問い合わせ画面のセレクトボックスにセットする。
+- まずは、都道府県用のモデルとマイグレーションファイル、シーダーを作成する。
+
+```sh:
+$ docker-compose run backend bash -c "cd laravel; php artisan make:model Prefecture --migration"
+$ docker-compose run backend bash -c "cd laravel; php artisan make:seeder PrefecturesSeeder"
+```
+- マイグレーションファイルを編集する。
+
+```php:
+    public function up()
+    {
+        Schema::create('prefectures', function (Blueprint $table) {
+            $table->increments('id');
+            $table->integer('code')->default(0); // 都道府県番号(value)
+            $table->text('name'); // 都道府県名(name)
+        });
+    }
+```
+- 続いて、テーブルの中に入れる初期データをシーダーに記述する。
+
+```php:
+    public function run()
+    {
+        // DB::table('prefectures')->delete();
+        DB::table('prefectures')->truncate();
+        $prefectures = [
+            ['code' => 1, 'name' => '北海道'],
+            ['code' => 2, 'name' => '青森県'],
+            ['code' => 3, 'name' => '岩手県'],
+            ['code' => 4, 'name' => '宮城県'],
+            ['code' => 5, 'name' => '秋田県'],
+            ['code' => 6, 'name' => '山形県'],
+            ['code' => 7, 'name' => '福島県'],
+            ['code' => 8, 'name' => '茨城県'],
+            ['code' => 9, 'name' => '栃木県'],
+            ['code' => 10, 'name' => '群馬県'],
+            ['code' => 11, 'name' => '埼玉県'],
+            ['code' => 12, 'name' => '千葉県'],
+            ['code' => 13, 'name' => '東京都'],
+            ['code' => 14, 'name' => '神奈川県'],
+            ['code' => 15, 'name' => '新潟県'],
+            ['code' => 16, 'name' => '富山県'],
+            ['code' => 17, 'name' => '石川県'],
+            ['code' => 18, 'name' => '福井県'],
+            ['code' => 19, 'name' => '山梨県'],
+            ['code' => 20, 'name' => '長野県'],
+            ['code' => 21, 'name' => '岐阜県'],
+            ['code' => 22, 'name' => '静岡県'],
+            ['code' => 23, 'name' => '愛知県'],
+            ['code' => 24, 'name' => '三重県'],
+            ['code' => 25, 'name' => '滋賀県'],
+            ['code' => 26, 'name' => '京都府'],
+            ['code' => 27, 'name' => '大阪府'],
+            ['code' => 28, 'name' => '兵庫県'],
+            ['code' => 29, 'name' => '奈良県'],
+            ['code' => 30, 'name' => '和歌山県'],
+            ['code' => 31, 'name' => '鳥取県'],
+            ['code' => 32, 'name' => '島根県'],
+            ['code' => 33, 'name' => '岡山県'],
+            ['code' => 34, 'name' => '広島県'],
+            ['code' => 35, 'name' => '山口県'],
+            ['code' => 36, 'name' => '徳島県'],
+            ['code' => 37, 'name' => '香川県'],
+            ['code' => 38, 'name' => '愛媛県'],
+            ['code' => 39, 'name' => '高知県'],
+            ['code' => 40, 'name' => '福岡県'],
+            ['code' => 41, 'name' => '佐賀県'],
+            ['code' => 42, 'name' => '長崎県'],
+            ['code' => 43, 'name' => '熊本県'],
+            ['code' => 44, 'name' => '大分県'],
+            ['code' => 45, 'name' => '宮崎県'],
+            ['code' => 46, 'name' => '鹿児島県'],
+            ['code' => 47, 'name' => '沖縄県'],
+        ];
+        DB::table('prefectures')->insert($prefectures);
+    }
+```
+- セットアップに、`DatabaseSeeder.php`でデータベースに登録されるようにする。
+
+```php:
+    public function run()
+    {
+        $this->call([
+            UsersTableSeeder::class,
+            AdminsTableSeeder::class,
+            PrefecturesSeeder::class  // 追加
+        ]);
+    }
+```
+- `php artisan db:seed`で、**DatabaseSeeder.php内のrunメソッド が実行**
+- `php artisan db:seed --class=XxxxxSeeder`で、**特定のシーダーだけ実行**
+- 準備が出来たら、DBに実データを登録する。
+
+```sh:
+docker-compose run backend bash -c "cd laravel; php artisan migrate"
+docker-compose run backend bash -c "cd laravel; php artisan db:seed --class=PrefecturesSeeder"
+```
+- このタイミングで気づいたが、Mysql自体が日本語の場合文字化けしてしまっているので、設定しておく。
+- 念のためMysqlコンテナに接続して設定ファイルを確認する。
+
+```sh:
+$ docker-compose exec mysql bash -c "cat /etc/mysql/conf.d/mysql.cnf"
+[mysql]
+```
+- ホスト側で、個人用の設定ファイルを作成する。
+
+```sh:
+# ホスト側
+$ pwd
+/c/Users/user/Desktop/portfolio
+$ cat <<EOL >> my.cnf
+[mysqld]
+character-set-server=utf8
+collation-server=utf8_general_ci
+
+[client]
+default-character-set=utf8
+EOL
+```
+- ホスト側からいつでも編集できるように、docker-compose.ymlで設定ファイルをマウントする。
+
+```yml:
+    volumes:
+    - mysql_data:/var/lib/mysql
+    - ./my.cnf:/etc/mysql/conf.d/my.cnf
+```
+- 設定し終わったら、`docker-compose up -d`でコンテナの再構築する。
+- 立ち上げ直したら、再度シーダーを実行して、都道府県マスタを登録する。
+- 続いて、問い合わせ画面のコントローラで、都道府県を取得する処理を実装する。
+
+```php:
+use App\Models\Prefecture; // 事前にPrefectureモデルをmodelsディレクトリに設置して、namespaceを変更しておく。
+
+    public function create()
+    {
+        $prefectures = Prefecture::orderBy('code','asc')->pluck('name', 'code');
+        $prefectures = $prefectures->prepend('都道府県', '');
+        return view('contacts.create')->with(['prefectures' => $prefectures]);
+    }
+```
+- prepend: コレクションの先頭に要素を追加する。今回だと、プルダウンの一番上を「都道府県」とするために追加している。
+- pluck: 指定したキーの全コレクション値を取得
+- view: controllerからviewへの変数の受け渡し
+  - 変数を一つ受け渡す場合はcompact関数又はwithメソッドで送信
+  - compact関数の場合
+  ```php:
+    public function test() {
+        $test_1 = "テスト";
+        return view('test.normal',compact('test_1'));
+    }
+  ```
+  - withメソッドの場合
+  ```php:
+    public function test() {
+        $test_1 = "テスト";
+        return view('test.normal')->with('test_1',$test_1);
+    }
+  ```
+  - view側では通常の変数名で展開可能
+  ```php:
+    <p>送られてきた変数は{{$test_1}}</p>
+  ```
+  - 複数の変数を受け渡す場合も、compact関数又はwithメソッドで送信
+  - compact関数の場合
+  ```php:
+    public function test() {
+        $test_1 = "テスト1";
+        $test_2 = "テスト2";
+        return view('test.normal',compact('test_1','test_2'));
+    }
+  ```
+  - withメソッドの場合
+  ```php:
+    public function test() {
+        $test_1 = "テスト1";
+        $test_2 = "テスト2";
+        return view('test.normal')->with([
+            "test_1" => $test_1,
+            "test_2" => $test_2,
+        ]);
+    }
+  ```
+  - view側では通常の変数名で展開可能
+  ```php:
+    <p>
+        送られてきた変数1は{{$test_1}}
+        送られてきた変数2は{{$test_2}}
+    </p>
+  ```
+- 続いて、`create.blade.php`でプルダウンを生成する。
+
+```php:
+          <div class="form-group">
+              <label for="city">City:</label>
+              <select name="city" class="form-control">
+                @foreach($prefectures as $code => $name)
+                  <option value="{{ $code }}">{{ $name }} </option>
+                @endforeach
+              </select>
+          </div>
+
+```
+
+**正式に都道府県マスタとお問い合わせのリレーションを構築する**
+
+- 先ほど、cityに対して登録を行ったが、正式にpref_idというカラムをcontactsテーブルに追加する。(一応外部キーとしている)
+```php:
+    public function up()
+    {
+        Schema::create('contacts', function (Blueprint $table) {
+            $table->increments('id');
+            $table->timestamps();
+            $table->string('first_name');
+            $table->string('last_name');
+            $table->string('email');
+            $table->string('job_title');
+            $table->string('city');   
+            $table->string('country');
+            $table->unsignedInteger('pref_id'); // 追加
+            $table->foreign('pref_id')->references('id')->on('prefectures'); // 追加
+        });
+    }
+```
+- 設定できたら、`migrate:fresh`を実行してテーブルを再構築 (注意：データは初期化される。)
+
+```sh:
+$ docker-compose run backend bash -c "cd laravel; php artisan migrate:fresh --seed"
+```
+- 注意点として下記2点がある。
+  - マイグレーションファイルの実行順序はファイル名の日付順である。そして、外部キー参照先テーブルは先に作られていないといけない。今回だと、prefecturesテーブルは先に作られていないといけないので、contactsのマイグレーションファイル名をprefecturesより後の日付に変更した。なお、contactsテーブルの修正マイグレーションファイルもcontactsよりも後の日付にしておく必要がある。
+  - 外部キーと参照先idのカラム型が違う問題に気を付ける必要がある。今回だとprefecturesテーブルのidはincrementsメソッドで実行しており、これは暗黙的にunsigned int型のカラムを生成する。なので、外部キー設定側は`$table->integer('xxxx')->unsigned()`もしくは、`$table->unsignedInteger('xxxx');`と定義する必要がある。
+- その他、コントローラや、テンプレート側も書き換える。
+- コントローラの都道府県マスタ取得処理
+```php:
+    public function create()
+    {
+        $prefectures = Prefecture::orderBy('code','asc')->pluck('name', 'id'); // pluckの部分を(name, code)を(name, id)に変更
+        $prefectures = $prefectures->prepend('都道府県', '');
+        return view('contacts.create')->with(['prefectures' => $prefectures]);
+    }
+    public function store(Request $request)
+    {   
+        // ...
+        // モデルインスタンスに値を格納
+        $contact = new Contact([
+            'file_name' => basename($filename),
+            'first_name' => $request->get('first_name'),
+            'last_name' => $request->get('last_name'),
+            'email' => $request->get('email'),
+            'job_title' => $request->get('job_title'),
+            'city' => $request->get('city'),
+            'country' => $request->get('country'),
+            'pref_id' => $request->get('pref_id') // 追加
+        ]);
+```
+- テンプレートのプルダウン連携処理 (create)
+
+```php:
+    <div class="form-group">
+        <label for="city">City:</label>
+        <input type="text" class="form-control" name="city"/>
+    </div>
+    <div class="form-group">
+        <label for="pref_id">Pref:</label>
+        <select name="pref_id" class="form-control">
+        @foreach($prefectures as $id => $name)
+            <option value="{{ $id }}">{{ $name }} </option>
+        @endforeach
+        </select>
+    </div>
+```
+- 続いて、全件表示側 (index)
+
+```php:
+    <thead>
+        <tr>
+          <td>ID</td>
+          <td>Image</td>
+          <td>Name</td>
+          <td>Email</td>
+          <td>Job Title</td>
+          <td>Pref</td>
+          <td>City</td>
+          <td>Country</td>
+          <td colspan = 2>Actions</td>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach($contacts as $contact)
+        <tr>
+            <td>{{$contact->id}}</td>
+            <td><img src="{{asset('storage/images/'.$contact->file_name)}}" width="100px" height="100px"></td>
+            <td>{{$contact->first_name}} {{$contact->last_name}}</td>
+            <td>{{$contact->email}}</td>
+            <td>{{$contact->job_title}}</td>
+            <td>{{$contact->prefName}}</td>
+            <td>{{$contact->city}}</td>
+            <td>{{$contact->country}}</td>
+            <td>
+                <a href="{{ route('contacts.edit',$contact->id) }}" class="btn btn-primary">Edit</a>
+            </td>
+            <td>
+                <form action="{{ route('contacts.destroy', $contact->id) }}" method="post">
+                  @csrf
+                  @method('DELETE')
+                  <button class="btn btn-danger" type="submit">Delete</button>
+                </form>
+            </td>
+        </tr>
+        @endforeach
+    </tbody>
+```
+- Laravelのアクセサを使うことで、モデルのプロパティ(テーブルのカラム)を、オリジナルの値から別の値に変換して取得している。(prefNameの部分)
+- Contactモデルで都道府県のIDをもとに文字列を取得する実装を行うことで、アクセサの処理を実現している。
+
+```php:
+<?php
+
+namespace App\Models; // modelsディレクトリに移動させたので
+
+use Illuminate\Database\Eloquent\Model;
+
+class Contact extends Model
+{
+    // ホワイトリスト： $fillableに指定したカラムのみ、create()やfill()、update()で値が代入される。
+    // $contact->update($request->all()); <- $fillableに指定していないもの以外は入らない。
+    protected $fillable = [
+        'first_name', 'last_name', 'email', 'city', 'country', 'job_title', 'file_name', 'pref_id',
+    ];
+    // ブラックリスト：$guardedに指定したカラムのみ、create()やfill()、update()で値が代入されない。
+    // $contact->update($request->all()); <- $guardedに指定していないものは全て入り得る
+    // protected $guarded = [];
+
+    // getXXXXXXAttribute で連携する。
+    public function getPrefNameAttribute() {
+        return \App\Models\Prefecture::where('id', $this->pref_id)->first()->name;
+    }
+}
+```
+- Eloquentでリレーションも考えたが、表示だけならこれでよい。
+
 </details>
